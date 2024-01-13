@@ -11,8 +11,10 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const fs = require("fs");
 const client = new S3Client({
   region: "ap-south-1",
-  accessKeyID: process.env.AWS_ACCESS_KEY,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
 });
 
 const listBuckets = async () => {
