@@ -11,42 +11,45 @@ const {
   getObjectPresignedUrl,
 } = require("./s3");
 const fs = require("fs");
-router.get("/listbuckets", async (req, res) => {
+router.get("/bucket/list", async (req, res) => {
   const response = await listBuckets();
   res.send(response.Buckets);
 });
 
-router.get("/listobjects/", async (req, res) => {
+router.get("/object/list", async (req, res) => {
   const response = await listObjects(
     process.env.S3_BUCKET_NAME || req.body.bucket || ""
   );
   res.send(response);
 });
 
-router.get("/getobject/:key", async (req, res) => {
+router.get("/object/:key", async (req, res) => {
   const response = await getObject(
     process.env.S3_BUCKET_NAME || req.body.bucket || "",
     req.params.key
   );
-  res.set("content-type", response.ContentType);
-  response.Body.pipe(res);
+  if (response.message) res.send(response.message);
+  else {
+    res.set("content-type", response.ContentType);
+    response.Body.pipe(res);
+  }
 });
 
-router.get("/getbucketurl", async (req, res) => {
+router.get("/bucket/url", async (req, res) => {
   const response = await getBucketUrl(
     process.env.S3_BUCKET_NAME || req.body.bucket || ""
   );
   console.log(response);
   res.send(response);
 });
-router.get("/getobjecturl/:Key", async (req, res) => {
+router.get("/object/:Key/url", async (req, res) => {
   const response = await getObjectUrl(
     process.env.S3_BUCKET_NAME || req.body.bucket || "",
     req.params.Key
   );
   res.send(response);
 });
-router.get("/getobjectpresignedurl/:Key", async (req, res) => {
+router.get("/object/:Key/presignedurl", async (req, res) => {
   const response = await getObjectPresignedUrl(
     process.env.S3_BUCKET_NAME || req.body.bucket || "",
     req.params.Key
@@ -57,27 +60,33 @@ router.get("/getobjectpresignedurl/:Key", async (req, res) => {
 router.post("/upload", upload.array("photos"), async (req, res) => {
   const Response = [];
   for (let file of req.files) {
+    const filename =
+      file.filename.split(".")[0] +
+      "_" +
+      Date.now() +
+      "." +
+      file.filename.split(".")[1];
     const response = await putObject(
       process.env.S3_BUCKET_NAME || req.body.bucket || "",
-      file.filename,
+      filename,
       file.path,
       file.mimetype
     );
     Response.push({
       orignalName: file.originalname,
-      Key: file.filename,
+      key: response.Key,
       url: response.url,
     });
   }
   res.send(Response);
 });
 
-router.post("/deleteobject", async (req, res) => {
+router.post("/object/:key/delete", async (req, res) => {
   const response = await deleteObject(
     process.env.S3_BUCKET_NAME || req.body.bucket || "",
-    req.body.key
+    req.params.key
   );
-  res.send("Object deleted successfully");
+  res.send(response);
 });
 
 module.exports = router;
